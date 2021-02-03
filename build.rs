@@ -4,21 +4,21 @@ fn search_path<'a>() -> &'a str {
     match env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() {
         "windows" => match env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {
             "x86_64" => {
-                #[cfg(feature = "dynamic")]
+                #[cfg(not(feature = "static"))]
                 {
                     "vendor\\windows\\amd64"
                 }
-                #[cfg(not(feature = "dynamic"))]
+                #[cfg(feature = "static")]
                 {
                     "vendor\\windows\\Static\\amd64"
                 }
             }
             "x86" => {
-                #[cfg(feature = "dynamic")]
+                #[cfg(not(feature = "static"))]
                 {
                     "vendor\\windows\\i386"
                 }
-                #[cfg(not(feature = "dynamic"))]
+                #[cfg(feature = "static")]
                 {
                     "vendor\\windows\\Static\\i386"
                 }
@@ -87,12 +87,12 @@ fn clang_args() -> &'static [&'static str] {
 fn linker_options(search: &str) {
     println!("cargo:rustc-link-search=native={}", search);
 
-    #[cfg(feature = "dynamic")]
+    #[cfg(not(feature = "static"))]
     {
         println!("cargo:rustc-link-lib=dylib=ftd2xx");
     }
 
-    #[cfg(not(feature = "dynamic"))]
+    #[cfg(feature = "static")]
     {
         println!("cargo:rustc-link-lib=static=ftd2xx");
         match env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() {
