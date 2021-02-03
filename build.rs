@@ -3,8 +3,26 @@ use std::env;
 fn search_path<'a>() -> &'a str {
     match env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() {
         "windows" => match env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {
-            "x86_64" => "vendor/windows/amd64",
-            "x86" => "vendor/windows/i386",
+            "x86_64" => {
+                #[cfg(feature = "dynamic")]
+                {
+                    "vendor\\windows\\amd64"
+                }
+                #[cfg(not(feature = "dynamic"))]
+                {
+                    "vendor\\windows\\Static\\amd64"
+                }
+            }
+            "x86" => {
+                #[cfg(feature = "dynamic")]
+                {
+                    "vendor\\windows\\i386"
+                }
+                #[cfg(not(feature = "dynamic"))]
+                {
+                    "vendor\\windows\\Static\\i386"
+                }
+            }
             target_arch => panic!("Target architecture not supported: {}", target_arch),
         },
         "linux" => match env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {
@@ -66,6 +84,41 @@ fn clang_args() -> &'static [&'static str] {
     }
 }
 
+fn linker_options(search: &str) {
+    println!("cargo:rustc-link-search=native={}", search);
+
+    #[cfg(feature = "dynamic")]
+    {
+        println!("cargo:rustc-link-lib=dylib=ftd2xx");
+    }
+
+    #[cfg(not(feature = "dynamic"))]
+    {
+        println!("cargo:rustc-link-lib=static=ftd2xx");
+        match env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() {
+            "windows" => {
+                // TODO: find a real way to find the VS install path
+                match env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {
+                    "x86_64" => {
+                        println!("cargo:rustc-link-search=native={}",
+                                 "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.28.29333\\lib\\x64");
+                    }
+                    "x86" => {
+                        println!("cargo:rustc-link-search=native={}",
+                                 "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.28.29333\\lib\\x86");
+                    }
+                    target_arch => panic!("Target architecture not supported: {}", target_arch),
+                }
+
+                println!("cargo:rustc-link-lib=static=legacy_stdio_definitions");
+                println!("cargo:rustc-link-lib=user32");
+            }
+            "linux" => {}
+            target_os => panic!("Target OS not supported: {}", target_os),
+        }
+    }
+}
+
 fn main() {
     let cwd = env::current_dir().unwrap();
     let mut header = cwd.clone();
@@ -73,11 +126,8 @@ fn main() {
     let mut search = cwd;
     search.push(search_path());
 
-    println!(
-        "cargo:rustc-link-search=native={}",
-        search.to_str().unwrap()
-    );
-    println!("cargo:rustc-link-lib=static=ftd2xx");
+    linker_options(search.to_str().unwrap());
+
     println!("cargo:rerun-if-changed={}", header.to_str().unwrap());
 
     #[cfg(feature = "bindgen")]
