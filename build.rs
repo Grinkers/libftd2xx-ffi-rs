@@ -85,14 +85,12 @@ fn clang_args() -> &'static [&'static str] {
 }
 
 #[cfg(not(feature = "static"))]
-fn linker_options(search: &str) {
-    println!("cargo:rustc-link-search=native={}", search);
+fn linker_options() {
     println!("cargo:rustc-link-lib=dylib=ftd2xx");
 }
 
 #[cfg(feature = "static")]
-fn linker_options(search: &str) {
-    println!("cargo:rustc-link-search=native={}", search);
+fn linker_options() {
     println!("cargo:rustc-link-lib=static=ftd2xx");
 
     match env::var("CARGO_CFG_TARGET_OS").unwrap().as_str() {
@@ -123,7 +121,11 @@ fn main() {
     let mut search = cwd;
     search.push(search_path());
 
-    linker_options(search.to_str().unwrap());
+    println!(
+        "cargo:rustc-link-search=native={}",
+        search.to_str().unwrap()
+    );
+    linker_options();
 
     println!("cargo:rerun-if-changed={}", header.to_str().unwrap());
     println!("cargo:rerun-if-env-changed=LIBMSVC_PATH");
