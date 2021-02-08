@@ -44,8 +44,9 @@ libftd2xx-ffi = { version = "~0.5.1", features = ["static"] }
 ```
 For GNU/Linux users, no further work is needed. Technically this may be preferred.
 However there may be license incompatibilities (static linking with GPL code).
+If in doubt, check the FTDI driver license terms.
 
-On Windows, we rely on MSVC and a manually set "LIBMSVC_PATH" environment variable.
+On Windows, we rely on MSVC and a manually set the "LIBMSVC_PATH" environment variable.
 For example a possible 2019 Community installation path may be:
 ```
 C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\lib\
